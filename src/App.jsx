@@ -15,7 +15,8 @@ export default function App() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const { data, loading, error } = useProperties(filters);
+  const { properties, loading, source } = useProperties();
+  const data = { properties, source };
 
   return (
     <div className={styles.app}>
