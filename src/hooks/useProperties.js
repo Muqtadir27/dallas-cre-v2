@@ -101,3 +101,21 @@ export function useProperties() {
 
   return { properties, loading, source };
 }
+
+export function usePredict() {
+  function predict({ sqft, yearBuilt, propertyType, occupancy, neighborhood }) {
+    const age = 2025 - (yearBuilt || 2000);
+    const ageFactor = age < 10 ? 1.15 : age < 20 ? 1.06 : age < 35 ? 0.99 : 0.88;
+    const TYPE_MULT = { 'Office': 1.1, 'Retail': 1.05, 'Mixed-Use': 1.08, 'Medical': 1.2, 'Industrial': 0.85, 'Warehouse': 0.78, 'Restaurant': 1.0, 'Flex Space': 0.9 };
+    const NBR_BASE = { 'Uptown': 420, 'Downtown': 400, 'Design District': 390, 'Victory Park': 380, 'Knox-Henderson': 360, 'Oak Lawn': 300, 'Deep Ellum': 280, 'Bishop Arts': 270, 'Mockingbird': 200, 'East Dallas': 190, 'Oak Cliff': 130, 'South Dallas': 115 };
+    const base = NBR_BASE[neighborhood] || 220;
+    const typeMult = TYPE_MULT[propertyType] || 1.0;
+    const occMult = occupancy === 'Occupied' ? 1.05 : occupancy === 'Vacant' ? 0.82 : 0.93;
+    const estimate = Math.round((sqft || 5000) * base * typeMult * ageFactor * occMult);
+    const zillow = Math.round(estimate * 0.89);
+    const capRate = parseFloat(((estimate * 0.07) / estimate * 100).toFixed(2));
+    const score = Math.min(99, Math.round(60 + (typeMult - 0.78) * 40 + (ageFactor - 0.88) * 30 + (occMult - 0.82) * 25));
+    return { estimate, zillow, capRate, score, fiveYear: Math.round(estimate * 1.22) };
+  }
+  return { predict };
+}
