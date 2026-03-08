@@ -59,11 +59,11 @@ export default function App() {
   const properties = useMemo(() => {
     if (!allProperties) return [];
     return allProperties.filter(p => {
-      if (filters.tiers?.length && !filters.tiers.includes(p.tier)) return false;
-      if (filters.types?.length && !filters.types.includes(p.property_type)) return false;
-      if (filters.occupancy?.length && !filters.occupancy.includes(p.occupancy_status)) return false;
-      if (filters.minValue && p.list_price < filters.minValue) return false;
-      if (filters.maxValue && p.list_price > filters.maxValue) return false;
+      if (filters.tier && filters.tier !== 'all' && p.tier !== filters.tier) return false;
+      if (filters.type && filters.type !== 'all' && p.property_type !== filters.type) return false;
+      if (filters.occupancy && filters.occupancy !== 'all' && p.occupancy_status !== filters.occupancy) return false;
+      if (filters.minValue && p.list_price < Number(filters.minValue)) return false;
+      if (filters.maxValue && p.list_price > Number(filters.maxValue)) return false;
       return true;
     });
   }, [allProperties, filters]);
