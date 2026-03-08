@@ -1,0 +1,117 @@
+{
+  "name": "Dallas CRE Data Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 6 }] }
+      },
+      "name": "Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [240, 300],
+      "id": "trigger-1"
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR-VERCEL-URL.vercel.app/api/scrape/dallas-cad",
+        "options": { "timeout": 15000 }
+      },
+      "name": "Fetch Dallas CAD",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [460, 200],
+      "id": "cad-fetch"
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR-VERCEL-URL.vercel.app/api/scrape/listings?source=loopnet",
+        "options": { "timeout": 30000 }
+      },
+      "name": "Fetch LoopNet",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [460, 340],
+      "id": "loopnet-fetch"
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR-VERCEL-URL.vercel.app/api/scrape/listings?source=crexi",
+        "options": { "timeout": 30000 }
+      },
+      "name": "Fetch Crexi",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [460, 480],
+      "id": "crexi-fetch"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "name": "Merge All Sources",
+      "type": "n8n-nodes-base.merge",
+      "position": [700, 340],
+      "id": "merge-1"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Normalize and deduplicate all properties from all sources\nconst allItems = items;\nconst allProperties = [];\n\nfor (const item of allItems) {\n  const body = item.json;\n  const props = body.properties || [];\n  allProperties.push(...props);\n}\n\n// Deduplicate by address\nconst seen = new Set();\nconst deduped = allProperties.filter(p => {\n  const key = (p.address || '').toLowerCase().trim();\n  if (seen.has(key)) return false;\n  seen.add(key);\n  return true;\n});\n\n// Normalize fields\nconst normalized = deduped.map(p => ({\n  source:           p.source || 'unknown',\n  external_id:      p.external_id || `${p.source}_${Math.random().toString(36).slice(2)}`,\n  address:          (p.address || '').trim(),\n  neighborhood:     p.neighborhood || 'Dallas',\n  zip:              p.zip || null,\n  latitude:         p.latitude  ? parseFloat(p.latitude)  : null,\n  longitude:        p.longitude ? parseFloat(p.longitude) : null,\n  property_type:    p.property_type || 'Office',\n  sqft:             p.sqft             ? parseInt(p.sqft)             : null,\n  lot_size_sqft:    p.lot_size_sqft    ? parseInt(p.lot_size_sqft)    : null,\n  year_built:       p.year_built       ? parseInt(p.year_built)       : null,\n  occupancy_status: p.occupancy_status || 'Occupied',\n  list_price:       p.list_price       ? parseInt(p.list_price)       : null,\n  predicted_value:  p.predicted_value  ? parseInt(p.predicted_value)  : null,\n  monthly_rent:     p.monthly_rent     ? parseInt(p.monthly_rent)     : null,\n  price_per_sqft:   p.price_per_sqft   ? parseInt(p.price_per_sqft)   : null,\n  cap_rate:         p.cap_rate         ? parseFloat(p.cap_rate)        : null,\n  days_on_market:   p.days_on_market   ? parseInt(p.days_on_market)   : null,\n  tier:             p.tier || 'standard',\n  raw_data:         p.raw_data || {},\n})).filter(p => p.address && p.latitude && p.longitude);\n\nconsole.log(`Normalized ${normalized.length} properties from ${allProperties.length} raw`);\n\nreturn [{ json: { properties: normalized, count: normalized.length } }];"
+      },
+      "name": "Normalize & Deduplicate",
+      "type": "n8n-nodes-base.function",
+      "position": [920, 340],
+      "id": "normalize-1"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Batch into chunks of 100 for Supabase upsert\nconst { properties } = items[0].json;\nconst CHUNK = 100;\nconst batches = [];\nfor (let i = 0; i < properties.length; i += CHUNK) {\n  batches.push({ json: { properties: properties.slice(i, i + CHUNK) } });\n}\nconsole.log(`Split into ${batches.length} batches`);\nreturn batches;"
+      },
+      "name": "Batch into 100s",
+      "type": "n8n-nodes-base.function",
+      "position": [1120, 340],
+      "id": "batch-1"
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR-VERCEL-URL.vercel.app/api/ingest",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type",     "value": "application/json" },
+            { "name": "x-ingest-secret",  "value": "dallas-cre-secret" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "properties", "value": "={{$json.properties}}" }
+          ]
+        },
+        "options": { "timeout": 15000 }
+      },
+      "name": "POST to Ingest API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1340, 340],
+      "id": "ingest-post"
+    },
+    {
+      "parameters": {
+        "functionCode": "const results = items.map(i => i.json);\nconst total = results.reduce((s, r) => s + (r.ingested || 0), 0);\nconsole.log(`Pipeline complete. Total ingested: ${total}`);\nreturn [{ json: { pipeline: 'complete', total_ingested: total, timestamp: new Date().toISOString() } }];"
+      },
+      "name": "Log Summary",
+      "type": "n8n-nodes-base.function",
+      "position": [1560, 340],
+      "id": "log-1"
+    }
+  ],
+  "connections": {
+    "Every 6 Hours":        { "main": [[{ "node": "Fetch Dallas CAD", "type": "main", "index": 0 }, { "node": "Fetch LoopNet", "type": "main", "index": 0 }, { "node": "Fetch Crexi", "type": "main", "index": 0 }]] },
+    "Fetch Dallas CAD":     { "main": [[{ "node": "Merge All Sources", "type": "main", "index": 0 }]] },
+    "Fetch LoopNet":        { "main": [[{ "node": "Merge All Sources", "type": "main", "index": 1 }]] },
+    "Fetch Crexi":          { "main": [[{ "node": "Merge All Sources", "type": "main", "index": 2 }]] },
+    "Merge All Sources":    { "main": [[{ "node": "Normalize & Deduplicate", "type": "main", "index": 0 }]] },
+    "Normalize & Deduplicate": { "main": [[{ "node": "Batch into 100s", "type": "main", "index": 0 }]] },
+    "Batch into 100s":      { "main": [[{ "node": "POST to Ingest API", "type": "main", "index": 0 }]] },
+    "POST to Ingest API":   { "main": [[{ "node": "Log Summary", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

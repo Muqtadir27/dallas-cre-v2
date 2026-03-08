@@ -1,0 +1,246 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(2px);
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.drawer {
+  width: 380px;
+  height: 100%;
+  background: var(--bg-1);
+  border-left: 1px solid var(--border-bright);
+  overflow-y: auto;
+  animation: slideIn 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.header {
+  padding: 20px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.typeTag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+.tierDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.closeBtn:hover { color: var(--text-0); background: var(--bg-3); }
+
+.address {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-0);
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.neighborhood {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.content {
+  padding: 20px;
+  flex: 1;
+}
+
+.valueBlock {
+  text-align: center;
+  padding: 20px;
+  background: var(--bg-2);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.valueLabel {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  margin-bottom: 6px;
+}
+
+.valuePrimary {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.valueSub {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.statusPill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.domBadge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-2);
+  padding: 5px 10px;
+  background: var(--bg-3);
+  border-radius: 20px;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.metric {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.metricVal {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.metricLabel {
+  font-size: 9px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.detailsTitle {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  margin-bottom: 10px;
+}
+
+.detailsList { display: flex; flex-direction: column; gap: 8px; }
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detailLabel {
+  font-size: 11px;
+  color: var(--text-2);
+  font-family: var(--font-display);
+}
+
+.detailVal {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-0);
+}
+
+.coordRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.coord {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-1);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.coordLabel {
+  font-size: 8px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.scoreSection { margin-top: 4px; }
