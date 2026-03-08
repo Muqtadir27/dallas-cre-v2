@@ -5,6 +5,7 @@ export default function PropertyDrawer({ property: p, onClose }) {
   if (!p) return null;
   const tierColor = TIER_COLORS[p.tier] || '#a8b8d0';
   const occColor = OCCUPANCY_COLORS[p.occupancy_status] || '#a8b8d0';
+  const roi = p.cap_rate ? p.cap_rate.toFixed(2) : null;
 
   return (
     <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
@@ -47,8 +48,8 @@ export default function PropertyDrawer({ property: p, onClose }) {
             {[
               { label: 'Monthly Rent', val: fmt.currency(p.monthly_rent), color: '#7cff6b' },
               { label: 'Cap Rate', val: `${p.cap_rate}%`, color: p.cap_rate > 6 ? '#2ed573' : '#f5c842' },
-              { label: 'Est. ROI', val: `${p.roi_percent}%`, color: '#c77dff' },
               { label: 'Annual Rent', val: fmt.currency(p.monthly_rent * 12), color: '#7cff6b' },
+              { label: 'Price/Sqft', val: `$${p.price_per_sqft}`, color: '#00d4ff' },
             ].map(m => (
               <div key={m.label} className={styles.metric}>
                 <div className={styles.metricVal} style={{ color: m.color }}>{m.val}</div>
@@ -64,12 +65,12 @@ export default function PropertyDrawer({ property: p, onClose }) {
           <div className={styles.detailsList}>
             {[
               { label: 'Building Size', val: fmt.sqft(p.sqft) },
-              { label: 'Lot Size', val: fmt.sqft(p.lot_size_sqft) },
+              p.lot_size_sqft && { label: 'Lot Size', val: fmt.sqft(p.lot_size_sqft) },
               { label: 'Year Built', val: p.year_built },
               { label: 'Building Age', val: `${2025 - p.year_built} years` },
-              { label: 'Walk Score', val: `${p.walk_score}/100` },
-              { label: 'Transit Score', val: `${p.transit_score}/100` },
-            ].map(d => (
+              { label: 'Property Type', val: p.property_type },
+              { label: 'Days on Market', val: `${p.days_on_market} days` },
+            ].filter(Boolean).map(d => (
               <div key={d.label} className={styles.detailRow}>
                 <span className={styles.detailLabel}>{d.label}</span>
                 <span className={styles.detailVal}>{d.val}</span>
@@ -86,22 +87,15 @@ export default function PropertyDrawer({ property: p, onClose }) {
             <div className={styles.coord}><span className={styles.coordLabel}>LNG</span>{p.longitude}</div>
           </div>
 
-          {/* Score bars */}
-          <div className={styles.scoreSection}>
-            {[
-              { label: 'Walk Score', val: p.walk_score, color: '#00d4ff' },
-              { label: 'Transit Score', val: p.transit_score, color: '#7cff6b' },
-            ].map(s => (
-              <div key={s.label} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-2)' }}>{s.label}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: s.color }}>{s.val}/100</span>
-                </div>
-                <div style={{ height: 3, background: 'var(--bg-3)', borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{ width: `${s.val}%`, height: '100%', background: s.color, borderRadius: 2, boxShadow: `0 0 6px ${s.color}66` }} />
-                </div>
-              </div>
-            ))}
+          {/* Cap rate bar */}
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-2)' }}>CAP RATE</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#2ed573' }}>{p.cap_rate}%</span>
+            </div>
+            <div style={{ height: 3, background: 'var(--bg-3)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(100, p.cap_rate * 7)}%`, height: '100%', background: 'linear-gradient(90deg, #2ed573, #00d4ff)', borderRadius: 2 }} />
+            </div>
           </div>
         </div>
       </div>
