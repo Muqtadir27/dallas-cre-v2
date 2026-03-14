@@ -1,10 +1,7 @@
 // api/properties.js
-// Reads from Supabase if configured, falls back to generated data
-
 const SUPABASE_URL  = process.env.SUPABASE_URL  || '';
 const SUPABASE_ANON = process.env.SUPABASE_ANON_KEY || '';
 
-// ── Fallback generated data (used until Supabase is populated) ────────────────
 const NEIGHBORHOODS = [
   { name:"Uptown",lat:32.7943,lng:-96.8017,tier:"premium",avgRent:28 },
   { name:"Downtown",lat:32.7767,lng:-96.7970,tier:"premium",avgRent:32 },
@@ -58,25 +55,36 @@ function generateFallback() {
   return props;
 }
 
-// ── Supabase fetch ─────────────────────────────────────────────────────────────
 async function fetchFromSupabase(filters={}) {
-  let url = `${SUPABASE_URL}/rest/v1/properties_clean?select=*&limit=500`;
+  // Fetch all pages up to 14,755 properties
+  let allProperties = [];
+  let offset = 0;
+  const pageSize = 1000;
 
-  if(filters.tier      && filters.tier      !=='all') url+=`&tier=eq.${filters.tier}`;
-  if(filters.type      && filters.type      !=='all') url+=`&property_type=eq.${encodeURIComponent(filters.type)}`;
-  if(filters.occupancy && filters.occupancy !=='all') url+=`&occupancy_status=eq.${encodeURIComponent(filters.occupancy)}`;
-  if(filters.minValue) url+=`&predicted_value=gte.${filters.minValue}`;
-  if(filters.maxValue) url+=`&predicted_value=lte.${filters.maxValue}`;
+  while(true) {
+    let url = `${SUPABASE_URL}/rest/v1/properties_clean?select=*&limit=${pageSize}&offset=${offset}`;
 
-  const res = await fetch(url, {
-    headers:{ 'apikey': SUPABASE_ANON, 'Authorization':`Bearer ${SUPABASE_ANON}` },
-    signal: AbortSignal.timeout(5000),
-  });
-  if(!res.ok) throw new Error(`Supabase ${res.status}`);
-  return res.json();
+    if(filters.tier      && filters.tier      !=='all') url+=`&tier=eq.${filters.tier}`;
+    if(filters.type      && filters.type      !=='all') url+=`&property_type=eq.${encodeURIComponent(filters.type)}`;
+    if(filters.occupancy && filters.occupancy !=='all') url+=`&occupancy_status=eq.${encodeURIComponent(filters.occupancy)}`;
+    if(filters.minValue) url+=`&predicted_value=gte.${filters.minValue}`;
+    if(filters.maxValue) url+=`&predicted_value=lte.${filters.maxValue}`;
+
+    const res = await fetch(url, {
+      headers:{ 'apikey': SUPABASE_ANON, 'Authorization':`Bearer ${SUPABASE_ANON}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    if(!res.ok) throw new Error(`Supabase ${res.status}`);
+    const page = await res.json();
+    if(!page.length) break;
+    allProperties = allProperties.concat(page);
+    if(page.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  return allProperties;
 }
 
-// ── Stats builder ─────────────────────────────────────────────────────────────
 function buildStats(properties) {
   if(!properties.length) return null;
   const total      = properties.length;
@@ -106,10 +114,9 @@ function buildStats(properties) {
   return{total,avgValue,avgRent,avgCapRate,vacantCount,occupiedCount,totalValue,neighborhoodBreakdown,typeBreakdown};
 }
 
-// ── Handler ───────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin','*');
-  res.setHeader('Cache-Control','s-maxage=60'); // 60s edge cache
+  res.setHeader('Cache-Control','no-cache');
 
   const filters = {
     tier:      req.query.tier,
@@ -122,17 +129,16 @@ export default async function handler(req, res) {
   let properties = [];
   let dataSource = 'generated';
 
-  // Try Supabase first
   if(SUPABASE_URL && SUPABASE_ANON){
     try{
       properties = await fetchFromSupabase(filters);
       dataSource = 'supabase';
+      console.log(`Loaded ${properties.length} properties from Supabase`);
     }catch(e){
       console.error('Supabase failed, using fallback:', e.message);
     }
   }
 
-  // Fallback: generated data with client-side filters applied
   if(!properties.length){
     let all = generateFallback();
     if(filters.tier      && filters.tier!=='all')      all=all.filter(p=>p.tier===filters.tier);
