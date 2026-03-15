@@ -4,8 +4,9 @@ import { fmt } from '../utils/format';
 export default function TopBar({ activeView, setActiveView, stats, loading }) {
   const views = [
     { id: 'map', label: 'Intelligence Map', icon: '◉' },
-    { id: 'analytics', label: 'Analytics', icon: '▦' },
-    { id: 'predictor', label: 'ML Predictor', icon: '◈' },
+    { id: 'analytics',       label: 'Analytics',    icon: '▦' },
+    { id: 'predictor',       label: 'ML Predictor', icon: '◈' },
+    { id: 'recommendations', label: 'Invest',        icon: '🔥' },
   ];
 
   return (
